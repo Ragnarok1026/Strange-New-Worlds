@@ -1,14 +1,19 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private float horizontal;
-    private float speed = 8f;
-    private float jumpingPower = 16f;
-    private bool isFacingRight = true;
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Transform wallCheck;
+    [SerializeField] private LayerMask wallLayer;
 
     private bool isWallSliding;
     private float wallSlidingSpeed = 2f;
+    private bool isFacingRight = true;
 
     private bool isWallJumping;
     private float wallJumpingDirection;
@@ -16,29 +21,32 @@ public class PlayerMovement : MonoBehaviour
     private float wallJumpingCounter;
     private float wallJumpingDuration = 0.4f;
     private Vector2 wallJumpingPower = new Vector2(8f, 16f);
+
+
+    public CharacterController2D controller;
+    public float runSpeed = 40f;
+
     public Animator animator;
+
+    float horizontalMove = 0f;
+    bool jump = false;
     bool block = false;
+    bool cling = false;
+    bool isClinging = false;
 
-    [SerializeField] private Rigidbody2D rb;
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private Transform wallCheck;
-    [SerializeField] private LayerMask wallLayer;
-
-    private void Update()
+    // Update is called once per frame
+    void Update()
     {
-        horizontal = Input.GetAxisRaw("Horizontal");
-        animator.SetFloat("Speed", Mathf.Abs(horizontal));
 
-        if (Input.GetButtonDown("Jump") && IsGrounded())
+        horizontalMove = Input.GetAxisRaw("Horizontal") * runSpeed;
+
+        animator.SetFloat("Speed", Mathf.Abs(horizontalMove));
+
+        if (Input.GetButtonDown("Jump"))
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower);
+            jump = true;
             animator.SetBool("IsJumping", true);
-        }
-
-        if (Input.GetButtonUp("Jump") && rb.linearVelocity.y > 0f)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
+            animator.SetBool("Grounded", false);
         }
 
         if (Input.GetButtonDown("Block"))
@@ -49,19 +57,15 @@ public class PlayerMovement : MonoBehaviour
         {
             block = false;
         }
-
         WallSlide();
         WallJump();
 
-        if (!isWallJumping)
-        {
-            Flip();
-        }
     }
 
     public void OnLanding()
     {
         animator.SetBool("IsJumping", false);
+        animator.SetBool("Grounded", true);
     }
 
     public void OnBlocking(bool isBlocking)
@@ -69,12 +73,12 @@ public class PlayerMovement : MonoBehaviour
         animator.SetBool("IsBlocking", isBlocking);
     }
 
-    private void FixedUpdate()
+
+    void FixedUpdate()
     {
-        if (!isWallJumping)
-        {
-            rb.linearVelocity = new Vector2(horizontal * speed, rb.linearVelocity.y);
-        }
+        // Move our character
+        controller.Move(horizontalMove * Time.fixedDeltaTime, block, jump);
+        jump = false;
     }
 
     private bool IsGrounded()
@@ -89,8 +93,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void WallSlide()
     {
-        if (IsWalled() && !IsGrounded() && horizontal != 0f)
+        if (IsWalled() && !IsGrounded() && horizontalMove != 0f)
         {
+            cling = true;
             isWallSliding = true;
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Clamp(rb.linearVelocity.y, -wallSlidingSpeed, float.MaxValue));
         }
@@ -104,6 +109,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isWallSliding)
         {
+            isClinging = true;
             isWallJumping = false;
             wallJumpingDirection = -transform.localScale.x;
             wallJumpingCounter = wallJumpingTime;
@@ -121,14 +127,6 @@ public class PlayerMovement : MonoBehaviour
             rb.linearVelocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
             wallJumpingCounter = 0f;
 
-            if (transform.localScale.x != wallJumpingDirection)
-            {
-                isFacingRight = !isFacingRight;
-                Vector3 localScale = transform.localScale;
-                localScale.x *= -1f;
-                transform.localScale = localScale;
-            }
-
             Invoke(nameof(StopWallJumping), wallJumpingDuration);
         }
     }
@@ -140,7 +138,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Flip()
     {
-        if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
+        if (isFacingRight && horizontalMove < 0f || !isFacingRight && horizontalMove > 0f)
         {
             isFacingRight = !isFacingRight;
             Vector3 localScale = transform.localScale;
@@ -148,4 +146,5 @@ public class PlayerMovement : MonoBehaviour
             transform.localScale = localScale;
         }
     }
+
 }

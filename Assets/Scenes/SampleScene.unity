@@ -41800,7 +41800,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_JumpForce: 600
-  m_BlockSpeed: 0.36
+  m_BlockSpeed: 0.16
   m_MovementSmoothing: 0.05
   m_AirControl: 1
   m_WhatIsGround:
@@ -41852,7 +41852,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d89cd8648880594496ef02c9cf8e059, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animator: {fileID: 1459484274}
   rb: {fileID: 1459484267}
   groundCheck: {fileID: 651117631}
   groundLayer:
@@ -41862,6 +41861,9 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 55
+  controller: {fileID: 1459484272}
+  runSpeed: 40
+  animator: {fileID: 1459484274}
 --- !u!95 &1459484274
 Animator:
   serializedVersion: 7
